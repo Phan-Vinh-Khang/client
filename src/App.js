@@ -320,25 +320,23 @@ function App() {
             <h2>Add mã giảm giá</h2>
             <div className="hint-box">
               <strong>Định dạng mỗi dòng (không xuống dòng):</strong><br />
-              <code>code|loại|giá_trị</code><br />
-              <code>MAGIAM10|percent|10</code><br />
-              <code>FREESHIP|fixed|15000</code><br />
-              <small>(Mỗi dòng 1 mã, phân cách bằng dấu <code>|</code>)</small>
+              <code> Nhập cookie dạng SPC_ST=data</code><br />
+              <code>Mỗi dòng 1 cookie</code>
             </div>
 
             <div className="textarea-row">
               <div className="textarea-group">
                 <div className="label-row">
-                  <label>Danh sách mã giảm giá gửi đi</label>
+                  <label>Danh sách SPC_ST</label>
                   <span className={`line-counter ${voucherLineCount >= 50 ? 'limit' : ''}`}>{voucherLineCount}/50 dòng</span>
                 </div>
                 <textarea className="no-wrap" wrap="off" value={voucher1} onChange={handleVoucher1Change}
-                  placeholder="MAGIAM10|percent|10&#10;FREESHIP|fixed|15000&#10;SALE50|percent|50" rows="12" />
+                  placeholder="SPC_ST=data" rows="12" />
               </div>
 
               <div className="textarea-group">
                 <div className="label-row">
-                  <label>{voucherResult ? 'Kết quả mã giảm giá trả về' : 'Kết quả xử lý (tùy chọn)'}</label>
+                  <label>Danh sách cookie add mã thành công</label>
                   {voucherParsed.length > 0 && (
                     <button className="copy-all-btn" onClick={handleVoucherCopyAll}>📋 Copy tất cả VOUCHER</button>
                   )}
