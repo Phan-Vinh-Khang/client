@@ -66,8 +66,12 @@ function App() {
     return data.results.map(item => {
       const id = item.username || item.phone || item.email || 'unknown';
       const icon = item.error === 0 ? '✅' : '❌';
-      const spc = item.spcSt || '';
-      return `${id}: ${item.des} ${icon}\nSPC_ST=${spc}`;
+
+      if (item.error === 0 && item.spcSt) {
+        return `${id}: ${item.des} ${icon}\nSPC_ST=${item.spcSt}`;
+      } else {
+        return `${id}: ${item.des} ${icon}`;
+      }
     }).join('\n\n');
   };
 
@@ -77,8 +81,7 @@ function App() {
     if (lines.length <= 50) {
       setText1(value);
       setError('');
-      setResult(null);
-      setText2('');
+      // KHÔNG xóa text2 và result khi chỉnh sửa textbox1
     } else {
       setText1(lines.slice(0, 50).join('\n'));
     }
