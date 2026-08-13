@@ -9,46 +9,38 @@ function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
-  // Detect loại của vị trí đầu tiên
   const detectType = (value) => {
     const trimmed = value.trim();
     if (!trimmed) return { type: 'username', value: '' };
 
-    // Email: chứa @
     if (trimmed.includes('@')) {
       return { type: 'email', value: trimmed };
     }
 
-    // Phone: chỉ chứa số và dấu +, độ dài 9-15
     const phoneRegex = /^[+]?\d{9,15}$/;
     if (phoneRegex.test(trimmed.replace(/\s/g, ''))) {
       return { type: 'phone', value: trimmed.replace(/\s/g, '') };
     }
 
-    // Còn lại là username
     return { type: 'username', value: trimmed };
   };
 
-  // Parse từng dòng textbox 1
   const parseLines = () => {
     const lines = text1.split('\n').filter(line => line.trim() !== '');
     const listUser = [];
 
     for (let i = 0; i < lines.length; i++) {
       const parts = lines[i].split('|');
-
-      // Bỏ qua dòng không đủ 3 phần
       if (parts.length < 3) continue;
 
       const rawFirst = parts[0].trim();
       const password = parts[1].trim();
       let rawThird = parts[2].trim();
 
-      // Xử lý SPC_F: nếu chưa có prefix thì thêm vào
       if (!rawThird.toUpperCase().startsWith('SPC_F=')) {
         rawThird = 'SPC_F=' + rawThird;
       }
-      const spcValue = rawThird.substring(6); // lấy sau "SPC_F="
+      const spcValue = rawThird.substring(6);
 
       const detected = detectType(rawFirst);
 
@@ -65,6 +57,22 @@ function App() {
     }
 
     return listUser;
+  };
+
+  const extractSpcResults = (data, originalList) => {
+    let arr = null;
+    if (Array.isArray(data)) arr = data;
+    else if (data?.listUser && Array.isArray(data.listUser)) arr = data.listUser;
+    else if (data?.results && Array.isArray(data.results)) arr = data.results;
+    else if (data?.data && Array.isArray(data.data)) arr = data.data;
+
+    if (!arr || arr.length === 0) return [];
+
+    return arr.map((item, idx) => {
+      const id = item.username || item.phone || item.email || originalList[idx]?.username || `Row${idx + 1}`;
+      const spc = item.SPC_ST || item.spc_st || item.SPC_F || item.newSpc || item.spc || '';
+      return { id, spc };
+    });
   };
 
   const handleText1Change = (e) => {
@@ -85,13 +93,14 @@ function App() {
     const listUser = parseLines();
 
     if (listUser.length === 0) {
-      setError('Không có dữ liệu hợp lệ để gửi. Mỗi dòng cần có định dạng: username|password|SPC_F=value');
+      setError('Không có dữ liệu hợp lệ. Mỗi dòng: username|password|SPC_F=value');
       return;
     }
 
     setLoading(true);
     setError('');
     setResult(null);
+    setText2('');
 
     try {
       const response = await fetch('https://api6-ufcx.onrender.com/batch-login', {
@@ -109,6 +118,13 @@ function App() {
       }
 
       setResult(data);
+
+      // Điền SPC_ST trả về vào textbox 2
+      const spcResults = extractSpcResults(data, listUser);
+      if (spcResults.length > 0) {
+        const output = spcResults.map(r => `${r.id}|SPC_ST=${r.spc}`).join('\n');
+        setText2(output);
+      }
     } catch (err) {
       setError(err.message || 'Có lỗi xảy ra khi gọi API');
     } finally {
@@ -152,36 +168,43 @@ function App() {
             <h2>Làm mới SPC_ST</h2>
 
             <div className="hint-box">
-              <strong>Định dạng mỗi dòng:</strong><br />
+              <strong>Định dạng mỗi dòng (không xuống dòng):</strong><br />
               <code>username|password|SPC_F=value</code><br />
               <code>phone|password|SPC_F=value</code><br />
               <code>email|password|SPC_F=value</code><br />
-              <small>(Nếu thiếu <code>SPC_F=</code> ở vị trí 3, hệ thống tự động thêm)</small>
+              <small>(Thiếu <code>SPC_F=</code> ở vị trí 3 thì tự động thêm)</small>
             </div>
 
             <div className="textarea-row">
               <div className="textarea-group">
                 <div className="label-row">
-                  <label>Danh sách tài khoản</label>
+                  <label>Danh sách tài khoản gửi đi</label>
                   <span className={`line-counter ${lineCount1 >= 50 ? 'limit' : ''}`}>
                     {lineCount1}/50 dòng
                   </span>
                 </div>
                 <textarea
+                  className="no-wrap"
+                  wrap="off"
                   value={text1}
                   onChange={handleText1Change}
-                  placeholder="user1|pass123|SPC_F=abc&#10;0909123456|pass456|xyz&#10;email@test.com|pass789|SPC_F=data"
+                  placeholder="user1|pass123|abc&#10;0909123456|pass456|xyz&#10;email@test.com|pass789|SPC_F=data"
                   rows="12"
                 />
               </div>
 
               <div className="textarea-group">
-                <label>Danh sách SPC mới (tùy chọn)</label>
+                <label>
+                  {result ? 'Kết quả SPC_ST trả về' : 'Danh sách SPC mới (tùy chọn)'}
+                </label>
                 <textarea
+                  className="no-wrap"
+                  wrap="off"
                   value={text2}
                   onChange={(e) => setText2(e.target.value)}
-                  placeholder="Dán danh sách SPC mới vào đây..."
+                  placeholder="Sau khi gửi, kết quả SPC_ST sẽ hiển thị ở đây..."
                   rows="12"
+                  readOnly={!!result}
                 />
               </div>
             </div>
@@ -189,7 +212,7 @@ function App() {
             {error && <div className="alert alert-error">{error}</div>}
             {result && (
               <div className="alert alert-success">
-                <strong>Gửi thành công!</strong>
+                <strong>Đã gửi thành công {lineCount1} tài khoản!</strong>
                 <pre>{JSON.stringify(result, null, 2)}</pre>
               </div>
             )}
