@@ -4,7 +4,7 @@ import LoginF from './loginF';
 import AddMGG from './addmgg';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('lam-moi-spc');
+  const [activeTab, setActiveTab] = useState('ma-giam-gia');
   const [toast, setToast] = useState('');
 
   useEffect(() => {

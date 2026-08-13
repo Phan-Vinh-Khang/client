@@ -132,7 +132,7 @@ export default function LoginF({ setToast }) {
         <code>username|password|SPC_F=value</code><br />
         <code>phone|password|SPC_F=value</code><br />
         <code>email|password|SPC_F=value</code><br />
-        <small>(Thiếu <code>SPC_F=</code> ở vị trí 3 thì tự động thêm)</small>
+        {/* <small>(Thiếu <code>SPC_F=</code> ở vị trí 3 thì tự động thêm)</small> */}
       </div>
 
       <div className="textarea-row">
