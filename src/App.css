@@ -10,7 +10,6 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Toolbar */
 .toolbar {
   display: flex;
   background-color: #fff;
@@ -51,7 +50,6 @@
   background-color: #1976d2;
 }
 
-/* Content */
 .content {
   padding: 30px 20px;
   max-width: 1200px;
@@ -72,7 +70,6 @@
   margin-bottom: 12px;
 }
 
-/* SPC Form */
 .spc-form {
   background: #fff;
   border-radius: 14px;
@@ -107,7 +104,6 @@
   color: #d32f2f;
 }
 
-/* 2 cột */
 .textarea-row {
   display: flex;
   gap: 20px;
@@ -146,7 +142,6 @@
   font-weight: 700;
 }
 
-/* Nút copy tất cả */
 .copy-all-btn {
   padding: 5px 12px;
   font-size: 13px;
@@ -164,7 +159,6 @@
   color: #fff;
 }
 
-/* Textarea input */
 .textarea-group textarea {
   width: 100%;
   padding: 16px;
@@ -195,7 +189,6 @@
   color: #bbb;
 }
 
-/* Result list */
 .result-list {
   width: 100%;
   min-height: 320px;
@@ -281,7 +274,6 @@
   color: #1b5e20;
 }
 
-/* Alert */
 .alert {
   padding: 14px 18px;
   border-radius: 10px;
@@ -295,7 +287,6 @@
   border: 1px solid #ef9a9a;
 }
 
-/* Button */
 .submit-btn {
   width: 100%;
   padding: 16px;
@@ -322,7 +313,6 @@
   cursor: not-allowed;
 }
 
-/* Toast */
 .toast {
   position: fixed;
   bottom: 30px;
@@ -344,7 +334,6 @@
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .textarea-row {
     flex-direction: column;

@@ -11,7 +11,6 @@ function App() {
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
 
-  // Auto hide toast
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(''), 2000);
@@ -124,12 +123,17 @@ function App() {
     }
   };
 
+  // Copy 1 dòng: có "SPC_ST=" ở trước
   const handleCopyOne = (spcSt) => {
-    if (spcSt) copyToClipboard(spcSt);
+    if (spcSt) copyToClipboard(`SPC_ST=${spcSt}`);
   };
 
+  // Copy tất cả: mỗi dòng có "SPC_ST=" ở trước
   const handleCopyAll = () => {
-    const allSpc = parsedResults.filter(r => r.success).map(r => r.spcSt).join('\n');
+    const allSpc = parsedResults
+      .filter(r => r.success)
+      .map(r => `SPC_ST=${r.spcSt}`)
+      .join('\n');
     if (allSpc) copyToClipboard(allSpc);
     else setToast('Không có SPC_ST nào!');
   };
