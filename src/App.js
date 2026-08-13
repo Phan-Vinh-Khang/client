@@ -20,7 +20,7 @@ function App() {
     }
 
     // Phone: chỉ chứa số và dấu +, độ dài 9-15
-    const phoneRegex = /^[\+]?\d{9,15}$/;
+    const phoneRegex = /^[+]?\d{9,15}$/;
     if (phoneRegex.test(trimmed.replace(/\s/g, ''))) {
       return { type: 'phone', value: trimmed.replace(/\s/g, '') };
     }
