@@ -59,20 +59,16 @@ function App() {
     return listUser;
   };
 
-  const extractSpcResults = (data, originalList) => {
-    let arr = null;
-    if (Array.isArray(data)) arr = data;
-    else if (data?.listUser && Array.isArray(data.listUser)) arr = data.listUser;
-    else if (data?.results && Array.isArray(data.results)) arr = data.results;
-    else if (data?.data && Array.isArray(data.data)) arr = data.data;
+  // Format kết quả API cho textbox 2
+  const formatApiResults = (data) => {
+    if (!data?.results || !Array.isArray(data.results)) return '';
 
-    if (!arr || arr.length === 0) return [];
-
-    return arr.map((item, idx) => {
-      const id = item.username || item.phone || item.email || originalList[idx]?.username || `Row${idx + 1}`;
-      const spc = item.SPC_ST || item.spc_st || item.SPC_F || item.newSpc || item.spc || '';
-      return { id, spc };
-    });
+    return data.results.map(item => {
+      const id = item.username || item.phone || item.email || 'unknown';
+      const icon = item.error === 0 ? '✅' : '❌';
+      const spc = item.spcSt || '';
+      return `${id}: ${item.des} ${icon}\nSPC_ST=${spc}`;
+    }).join('\n\n');
   };
 
   const handleText1Change = (e) => {
@@ -82,6 +78,7 @@ function App() {
       setText1(value);
       setError('');
       setResult(null);
+      setText2('');
     } else {
       setText1(lines.slice(0, 50).join('\n'));
     }
@@ -118,13 +115,7 @@ function App() {
       }
 
       setResult(data);
-
-      // Điền SPC_ST trả về vào textbox 2
-      const spcResults = extractSpcResults(data, listUser);
-      if (spcResults.length > 0) {
-        const output = spcResults.map(r => `${r.id}|SPC_ST=${r.spc}`).join('\n');
-        setText2(output);
-      }
+      setText2(formatApiResults(data));
     } catch (err) {
       setError(err.message || 'Có lỗi xảy ra khi gọi API');
     } finally {
@@ -210,12 +201,6 @@ function App() {
             </div>
 
             {error && <div className="alert alert-error">{error}</div>}
-            {result && (
-              <div className="alert alert-success">
-                <strong>Đã gửi thành công {lineCount1} tài khoản!</strong>
-                <pre>{JSON.stringify(result, null, 2)}</pre>
-              </div>
-            )}
 
             <button
               className="submit-btn"
