@@ -134,7 +134,7 @@ export default function AddMGG({ setToast }) {
 
         <div className="textarea-group">
           <div className="label-row">
-            <label>Danh sách cookie add mã thành công</label>
+            <label>{voucherResult ? 'Kết quả mã giảm giá trả về' : 'Danh sách cookie add mã thành công'}</label>
             {voucherParsed.length > 0 && (
               <button className="copy-all-btn" onClick={handleVoucherCopyAll}>📋 Copy tất cả VOUCHER</button>
             )}
