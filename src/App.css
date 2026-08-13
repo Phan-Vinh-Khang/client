@@ -346,3 +346,31 @@
     font-size: 13px;
   }
 }
+.textarea-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.textarea-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Textbox 1 & 3 rộng bằng nhau */
+.col-large {
+  flex: 5;
+  min-width: 0; /* quan trọng để flex không bị tràn */
+}
+
+/* Textbox 2 ở giữa nhỏ hơn */
+.col-small {
+  flex: 2;
+  min-width: 0;
+}
+
+.textarea-group textarea,
+.textarea-group .result-list {
+  width: 100%;
+  box-sizing: border-box;
+}
