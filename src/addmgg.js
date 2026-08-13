@@ -119,8 +119,8 @@ export default function AddMGG({ setToast }) {
 
       <div className="hint-box">
         <strong>Định dạng nhập liệu:</strong><br />
-        <code>Textbox 1: Mỗi dòng 1 cookie SPC_ST</code><br />
-        <code>Textbox 2: Mỗi dòng 1 mã voucher</code>
+        <code>Mỗi dòng 1 cookie SPC_ST</code><br />
+        <code>Mỗi dòng 1 mã voucher</code>
       </div>
 
       <div className="textarea-row">
