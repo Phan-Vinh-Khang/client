@@ -8,6 +8,7 @@ export default function AddMGG({ setToast }) {
   const [voucherError, setVoucherError] = useState('');
   const [validCount, setValidCount] = useState(0);
   const [validResults, setValidResults] = useState([]);
+  const [errorResults, setErrorResults] = useState([]); // ← NEW: lưu cookie lỗi
 
   const copyToClipboard = async (text) => {
     try {
@@ -71,9 +72,10 @@ export default function AddMGG({ setToast }) {
     setVoucher3('');
     setValidCount(0);
     setValidResults([]);
+    setErrorResults([]); // ← reset
 
     try {
-      const response = await fetch('https://api6-ufcx.onrender.com/addmgg', {
+      const response = await fetch('http://localhost:3003/addmgg', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listUser, listVoucher }),
@@ -81,18 +83,31 @@ export default function AddMGG({ setToast }) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || `Lỗi HTTP ${response.status}`);
 
-      const valids = data.results?.filter(
+      // Tách valid & error
+      const all = data.results || [];
+      const valids = all.filter(
         item => item.invalid_message_code === 0 || item.invalid_message_code === 1
-      ) || [];
+      );
+      const errors = all.filter(
+        item => item.status === 'auth_failed' || item.invalid_message_code === 2
+      );
 
       const count = data.validCount !== undefined ? data.validCount : valids.length;
       setValidCount(count);
       setValidResults(valids);
+      setErrorResults(errors);
 
-      const lines = valids.map(item =>
+      const validLines = valids.map(item =>
         `Account ${item.accountIndex} | ${item.voucherCode} | ${item.cookie || ''}`
       );
-      setVoucher3(`${count} tài khoản có voucher\n\n${lines.join('\n')}`);
+      const errorLines = errors.map(item =>
+        `Account ${item.accountIndex} | ${item.voucherCode} | ${item.cookie || ''} | [ERROR: ${item.invalid_message || 'Cookie hết hạn'}]`
+      );
+      setVoucher3(
+        `${count} tài khoản có voucher\n\n` +
+        `${validLines.join('\n')}\n\n` +
+        `${errors.length > 0 ? `--- ${errors.length} tài khoản lỗi ---\n${errorLines.join('\n')}` : ''}`
+      );
     } catch (err) {
       setVoucherError(err.message || 'Có lỗi xảy ra khi gọi API');
     } finally {
@@ -101,10 +116,12 @@ export default function AddMGG({ setToast }) {
   };
 
   const handleCopyAllCookie = () => {
-    const all = validResults.map(r => r.cookie).filter(Boolean).join('\n');
+    const all = [...validResults, ...errorResults].map(r => r.cookie).filter(Boolean).join('\n');
     if (all) copyToClipboard(all);
     else setToast('Không có cookie nào!');
   };
+
+  const hasAnyResult = validResults.length > 0 || errorResults.length > 0;
 
   return (
     <div className="spc-form">
@@ -161,17 +178,18 @@ export default function AddMGG({ setToast }) {
           <div className="label-row">
             <label>Tài khoản có voucher</label>
             <div style={{ display: 'flex', gap: '6px' }}>
-              {validResults.length > 0 && (
+              {hasAnyResult && (
                 <button className="copy-all-btn" onClick={handleCopyAllCookie}>📋 Copy tất cả</button>
               )}
             </div>
           </div>
 
-          {validResults.length > 0 ? (
+          {hasAnyResult ? (
             <div className="result-list" style={{ maxHeight: '280px', overflowY: 'auto', border: '1px solid #ddd', borderRadius: '6px', padding: '8px' }}>
+              {/* VALID items – màu xanh */}
               {validResults.map((item, idx) => (
                 <div
-                  key={idx}
+                  key={`valid-${idx}`}
                   className="result-item success"
                   onClick={() => item.cookie && copyToClipboard(item.cookie)}
                   title="Click để copy cookie"
@@ -187,6 +205,34 @@ export default function AddMGG({ setToast }) {
                   </div>
                   {item.cookie && (
                     <div className="result-spc" style={{ marginTop: '4px', wordBreak: 'break-all', fontSize: '12px', color: '#2e7d32', fontFamily: 'monospace', background: '#f1f8e9', padding: '6px', borderRadius: '4px' }}>
+                      {item.cookie}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* ERROR items – màu cam */}
+              {errorResults.map((item, idx) => (
+                <div
+                  key={`error-${idx}`}
+                  className="result-item error"
+                  onClick={() => item.cookie && copyToClipboard(item.cookie)}
+                  title="Click để copy cookie (lỗi / hết hạn)"
+                  style={{ marginBottom: '8px', cursor: 'pointer' }}
+                >
+                  <div className="result-header" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                    <div style={{ fontSize: '13px', color: '#555' }}>
+                      <strong>cookie:</strong> {item.accountIndex}
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#555' }}>
+                      <strong>voucher:</strong> {item.voucherCode}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#ed6c02', fontWeight: 'bold' }}>
+                      ⚠️ {item.invalid_message || 'Cookie hết hạn'}
+                    </div>
+                  </div>
+                  {item.cookie && (
+                    <div className="result-spc" style={{ marginTop: '4px', wordBreak: 'break-all', fontSize: '12px', color: '#ed6c02', fontFamily: 'monospace', background: '#fff3e0', padding: '6px', borderRadius: '4px', border: '1px solid #ffcc80' }}>
                       {item.cookie}
                     </div>
                   )}
