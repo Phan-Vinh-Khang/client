@@ -96,7 +96,7 @@ export default function LoginF({ setToast }) {
     setText2('');
 
     try {
-      const response = await fetch('https://api6-ufcx.onrender.com/batch-login', {
+      const response = await fetch('https://api6-production.up.railway.app/batch-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listUser }),
