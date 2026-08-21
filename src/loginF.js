@@ -139,7 +139,7 @@ export default function LoginF({ setToast }) {
         <div className="textarea-group">
           <div className="label-row">
             <label>Danh sách tài khoản gửi đi</label>
-            <span className={`line-counter ${lineCount1 >= 50 ? 'limit' : ''}`}>{lineCount1}/50 dòng</span>
+            <span className={`line-counter ${lineCount1 >= 200 ? 'limit' : ''}`}>{lineCount1}/200 dòng</span>
           </div>
           <textarea
             className="no-wrap"
