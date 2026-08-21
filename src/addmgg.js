@@ -28,22 +28,22 @@ export default function AddMGG({ setToast }) {
   const handleVoucher1Change = (e) => {
     const value = e.target.value;
     const lines = value.split('\n');
-    if (lines.length <= 50) {
+    if (lines.length <= 200) {
       setVoucher1(value);
       setVoucherError('');
     } else {
-      setVoucher1(lines.slice(0, 50).join('\n'));
+      setVoucher1(lines.slice(0, 200).join('\n'));
     }
   };
 
   const handleVoucher2Change = (e) => {
     const value = e.target.value;
     const lines = value.split('\n');
-    if (lines.length <= 50) {
+    if (lines.length <= 200) {
       setVoucher2(value);
       setVoucherError('');
     } else {
-      setVoucher2(lines.slice(0, 50).join('\n'));
+      setVoucher2(lines.slice(0, 200).join('\n'));
     }
   };
 
@@ -161,7 +161,7 @@ export default function AddMGG({ setToast }) {
         <div className="textarea-group col-large">
           <div className="label-row">
             <label>Danh sách voucher</label>
-            <span className={`line-counter ${voucherLineCount2 >= 50 ? 'limit' : ''}`}>{voucherLineCount2}/50 dòng</span>
+            <span className={`line-counter ${voucherLineCount2 >= 200 ? 'limit' : ''}`}>{voucherLineCount2}/200 dòng</span>
           </div>
           <textarea
             className="no-wrap"
