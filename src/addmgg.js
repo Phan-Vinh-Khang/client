@@ -97,6 +97,11 @@ export default function AddMGG({ setToast }) {
       setValidResults(valids);
       setErrorResults(errors);
 
+      // Nếu không có tài khoản nào áp được → hiển thị thông báo ở textbox 3
+      if (valids.length === 0) {
+        setVoucher3('Không có cookie nào áp được mã');
+      }
+
       const validLines = valids.map(item =>
         `Account ${item.accountIndex} | ${item.voucherCode} | ${item.cookie || ''}`
       );
@@ -186,6 +191,13 @@ export default function AddMGG({ setToast }) {
 
           {hasAnyResult ? (
             <div className="result-list" style={{ maxHeight: '280px', overflowY: 'auto', border: '1px solid #ddd', borderRadius: '6px', padding: '8px' }}>
+              {/* Thông báo khi không có tài khoản nào áp được */}
+              {validResults.length === 0 && (
+                <div style={{ padding: '12px', color: '#d32f2f', fontWeight: 'bold', textAlign: 'center', marginBottom: '8px', background: '#ffebee', borderRadius: '4px' }}>
+                  Không có cookie nào áp được mã
+                </div>
+              )}
+
               {/* VALID items – màu xanh */}
               {validResults.map((item, idx) => (
                 <div
