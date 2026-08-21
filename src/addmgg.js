@@ -145,7 +145,7 @@ export default function AddMGG({ setToast }) {
         <div className="textarea-group col-large">
           <div className="label-row">
             <label>Danh sách SPC_ST</label>
-            <span className={`line-counter ${voucherLineCount1 >= 50 ? 'limit' : ''}`}>{voucherLineCount1}/50 dòng</span>
+            <span className={`line-counter ${voucherLineCount1 >= 200 ? 'limit' : ''}`}>{voucherLineCount1}/200 dòng</span>
           </div>
           <textarea
             className="no-wrap"
