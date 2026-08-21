@@ -73,11 +73,11 @@ export default function LoginF({ setToast }) {
   const handleText1Change = (e) => {
     const value = e.target.value;
     const lines = value.split('\n');
-    if (lines.length <= 50) {
+    if (lines.length <= 200) {
       setText1(value);
       setError('');
     } else {
-      setText1(lines.slice(0, 50).join('\n'));
+      setText1(lines.slice(0, 200).join('\n'));
     }
   };
 
