@@ -146,7 +146,7 @@ export default function LoginF({ setToast }) {
             wrap="off"
             value={text1}
             onChange={handleText1Change}
-            placeholder="user1|pass123|abc&#10;0909123456|pass456|xyz&#10;email@test.com|pass789|SPC_F=data"
+            placeholder="user1|pass123|SPC_F=value&#10;0909123456|pass456|SPC_F=value&#10;email@test.com|pass789|SPC_F=data"
             rows="12"
           />
         </div>
