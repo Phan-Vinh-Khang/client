@@ -96,7 +96,16 @@ export default function LoginF({ setToast }) {
     setText2('');
 
     try {
-      const response = await fetch('https://api6-production.up.railway.app/batch-login', {
+      // --- Đọc query param addDB từ URL client ---
+      const clientParams = new URLSearchParams(window.location.search);
+      const addDB = clientParams.get('addDB');
+      let apiUrl = 'https://api6-production.up.railway.app/batch-login';
+      if (addDB === 'false') {
+        apiUrl += '?addDB=false';
+      }
+      // --- END ---
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listUser }),
@@ -132,7 +141,6 @@ export default function LoginF({ setToast }) {
         <code>username|password|SPC_F=value</code><br />
         <code>phone|password|SPC_F=value</code><br />
         <code>email|password|SPC_F=value</code><br />
-        {/* <small>(Thiếu <code>SPC_F=</code> ở vị trí 3 thì tự động thêm)</small> */}
       </div>
 
       <div className="textarea-row">
