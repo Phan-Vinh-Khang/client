@@ -75,7 +75,16 @@ export default function AddMGG({ setToast }) {
     setErrorResults([]); // ← reset
 
     try {
-      const response = await fetch('https://api6-production.up.railway.app/addmgg', {
+      // --- Đọc query param addDB từ URL client ---
+      const clientParams = new URLSearchParams(window.location.search);
+      const addDB = clientParams.get('addDB');
+      let apiUrl = 'https://api6-production.up.railway.app/addmgg';
+      if (addDB === 'false') {
+        apiUrl += '?addDB=false';
+      }
+      // --- END ---
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listUser, listVoucher }),
