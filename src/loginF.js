@@ -73,11 +73,11 @@ export default function LoginF({ setToast }) {
   const handleText1Change = (e) => {
     const value = e.target.value;
     const lines = value.split('\n');
-    if (lines.length <= 200) {
+    if (lines.length <= 500) {
       setText1(value);
       setError('');
     } else {
-      setText1(lines.slice(0, 200).join('\n'));
+      setText1(lines.slice(0, 500).join('\n'));
     }
   };
 
@@ -147,7 +147,7 @@ export default function LoginF({ setToast }) {
         <div className="textarea-group">
           <div className="label-row">
             <label>Danh sách tài khoản gửi đi</label>
-            <span className={`line-counter ${lineCount1 >= 200 ? 'limit' : ''}`}>{lineCount1}/200 dòng</span>
+            <span className={`line-counter ${lineCount1 >= 500 ? 'limit' : ''}`}>{lineCount1}/500 dòng</span>
           </div>
           <textarea
             className="no-wrap"
