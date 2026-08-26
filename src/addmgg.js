@@ -141,6 +141,11 @@ export default function AddMGG({ setToast }) {
     <div className="spc-form">
       <h2>Add mã giảm giá</h2>
 
+      {/* Cảnh báo số lượng cookie */}
+      <div style={{ marginBottom: '12px', padding: '10px 16px', background: '#fff3e0', borderRadius: '8px', border: '1px solid #ff9800', color: '#e65100', fontSize: '14px' }}>
+        ⚠️ <strong>Cảnh báo:</strong> Duyệt trên 100 cookie cùng lúc có thể phải chờ vài phút, mn ưu tiên duyệt số lượng cookie &lt;100
+      </div>
+
       {/* Banner validCount */}
       {validCount > 0 && (
         <div className="valid-count-box" style={{ marginBottom: '12px', padding: '10px 16px', background: '#e8f5e9', borderRadius: '8px', border: '1px solid #4caf50', color: '#2e7d32', fontWeight: 'bold' }}>
