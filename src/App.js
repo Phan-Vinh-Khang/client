@@ -25,8 +25,8 @@ function App() {
       <main className="content">
         {activeTab === 'check-don' && (
           <div className="placeholder">
-            <h2>Check đơn</h2>
-            <p>Giao diện kiểm tra đơn hàng sẽ hiển thị ở đây.</p>
+            <h2>Check thông tin đơn hàng</h2>
+            <p>Chức năng đang được cập nhật. Vui lòng quay lại sau.</p>
           </div>
         )}
 

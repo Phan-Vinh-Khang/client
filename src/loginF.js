@@ -2,210 +2,57 @@ import { useState } from 'react';
 
 export default function LoginF({ setToast }) {
   const [text1, setText1] = useState('');
-  const [text2, setText2] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
   const [parsedResults, setParsedResults] = useState([]);
   const [error, setError] = useState('');
 
-  const copyToClipboard = async (text) => {
+  const copy = async (value) => {
+    try { await navigator.clipboard.writeText(value); } catch {
+      const area = document.createElement('textarea'); area.value = value; document.body.appendChild(area); area.select(); document.execCommand('copy'); document.body.removeChild(area);
+    }
+    setToast('Đã sao chép!');
+  };
+
+  const parseUsers = () => text1.split('\n').filter(Boolean).reduce((items, line) => {
+    const [identity, password, rawSpc] = line.split('|').map(value => value?.trim());
+    if (!identity || !password || !rawSpc) return items;
+    const normalized = identity.replace(/\s/g, '');
+    const type = identity.includes('@') ? 'email' : /^[+]?\d{9,15}$/.test(normalized) ? 'phone' : 'username';
+    items.push({ username: '', phone: '', email: '', password, SPC_F: rawSpc.replace(/^SPC_F=/i, ''), [type]: type === 'phone' ? normalized : identity });
+    return items;
+  }, []);
+
+  const changeText = (event) => { setText1(event.target.value.split('\n').slice(0, 500).join('\n')); setError(''); };
+  const lineCount = text1.split('\n').filter(line => line.trim()).length;
+  const successCount = parsedResults.filter(item => item.success).length;
+
+  const submit = async () => {
+    const listUser = parseUsers();
+    if (!listUser.length) { setError('Chưa có dữ liệu hợp lệ. Mỗi dòng cần theo định dạng: tài_khoản|mật_khẩu|SPC_F=value'); return; }
+    setLoading(true); setError(''); setParsedResults([]);
     try {
-      await navigator.clipboard.writeText(text);
-      setToast('Đã copy!');
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      setToast('Đã copy!');
-    }
-  };
-
-  const detectType = (value) => {
-    const trimmed = value.trim();
-    if (!trimmed) return { type: 'username', value: '' };
-    if (trimmed.includes('@')) return { type: 'email', value: trimmed };
-    const phoneRegex = /^[+]?\d{9,15}$/;
-    if (phoneRegex.test(trimmed.replace(/\s/g, ''))) {
-      return { type: 'phone', value: trimmed.replace(/\s/g, '') };
-    }
-    return { type: 'username', value: trimmed };
-  };
-
-  const parseLines = () => {
-    const lines = text1.split('\n').filter(line => line.trim() !== '');
-    const listUser = [];
-    for (let i = 0; i < lines.length; i++) {
-      const parts = lines[i].split('|');
-      if (parts.length < 3) continue;
-      const rawFirst = parts[0].trim();
-      const password = parts[1].trim();
-      let rawThird = parts[2].trim();
-      if (!rawThird.toUpperCase().startsWith('SPC_F=')) {
-        rawThird = 'SPC_F=' + rawThird;
-      }
-      const spcValue = rawThird.substring(6);
-      const detected = detectType(rawFirst);
-      const userObj = { username: '', phone: '', email: '', SPC_F: spcValue, password: password };
-      userObj[detected.type] = detected.value;
-      listUser.push(userObj);
-    }
-    return listUser;
-  };
-
-  const parseApiResults = (data) => {
-    if (!data?.results || !Array.isArray(data.results)) return [];
-    return data.results.map(item => {
-      const id = item.username || item.phone || item.email || 'unknown';
-      return {
-        id,
-        value: item.spcSt || '',
-        error: item.error,
-        des: item.des || '',
-        success: item.error === 0 && !!item.spcSt,
-        prefix: 'SPC_ST=',
-      };
-    });
-  };
-
-  const handleText1Change = (e) => {
-    const value = e.target.value;
-    const lines = value.split('\n');
-    if (lines.length <= 500) {
-      setText1(value);
-      setError('');
-    } else {
-      setText1(lines.slice(0, 500).join('\n'));
-    }
-  };
-
-  const lineCount1 = text1.split('\n').filter(l => l.trim() !== '').length;
-
-  const handleSubmit = async () => {
-    const listUser = parseLines();
-    if (listUser.length === 0) {
-      setError('Không có dữ liệu hợp lệ. Mỗi dòng: username|password|SPC_F=value');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    setResult(null);
-    setParsedResults([]);
-    setText2('');
-
-    try {
-      // --- Đọc query param addDB từ URL client ---
-      const clientParams = new URLSearchParams(window.location.search);
-      const addDB = clientParams.get('addDB');
-      let apiUrl = 'https://api6-production.up.railway.app/batch-login';
-      if (addDB === 'false') {
-        apiUrl += '?addDB=false';
-      }
-      // --- END ---
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listUser }),
-      });
+      const addDB = new URLSearchParams(window.location.search).get('addDB');
+      const response = await fetch(`https://api6-production.up.railway.app/batch-login${addDB === 'false' ? '?addDB=false' : ''}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listUser }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || `Lỗi HTTP ${response.status}`);
-      setResult(data);
-      const parsed = parseApiResults(data);
-      setParsedResults(parsed);
-      setText2(parsed.map(r => r.success ? `${r.id}: ${r.des} ✅\n${r.prefix}${r.value}` : `${r.id}: ${r.des} ❌`).join('\n\n'));
-    } catch (err) {
-      setError(err.message || 'Có lỗi xảy ra khi gọi API');
-    } finally {
-      setLoading(false);
-    }
+      setParsedResults((data.results || []).map(item => ({ id: item.username || item.phone || item.email || 'unknown', value: item.spcSt || '', description: item.des || '', success: item.error === 0 && Boolean(item.spcSt) })));
+    } catch (err) { setError(err.message || 'Có lỗi xảy ra khi gọi API'); } finally { setLoading(false); }
   };
 
-  const handleCopyOne = (prefix, value) => {
-    if (value) copyToClipboard(`${prefix}${value}`);
-  };
+  const copyAll = () => { const values = parsedResults.filter(item => item.success).map(item => `SPC_ST=${item.value}`).join('\n'); values ? copy(values) : setToast('Không có SPC_ST để sao chép!'); };
 
-  const handleCopyAll = () => {
-    const all = parsedResults.filter(r => r.success).map(r => `${r.prefix}${r.value}`).join('\n');
-    if (all) copyToClipboard(all);
-    else setToast('Không có dữ liệu nào!');
-  };
-
-  return (
-    <div className="spc-form">
-      <h2>Làm mới SPC_ST</h2>
-      <div className="hint-box">
-        <strong>Định dạng mỗi dòng (không xuống dòng):</strong><br />
-        <code>username|password|SPC_F=value</code><br />
-        <code>phone|password|SPC_F=value</code><br />
-        <code>email|password|SPC_F=value</code><br />
-      </div>
-
-      <div className="textarea-row">
-        <div className="textarea-group">
-          <div className="label-row">
-            <label>Danh sách tài khoản gửi đi</label>
-            <span className={`line-counter ${lineCount1 >= 500 ? 'limit' : ''}`}>{lineCount1}/500 dòng</span>
-          </div>
-          <textarea
-            className="no-wrap"
-            wrap="off"
-            value={text1}
-            onChange={handleText1Change}
-            placeholder="user1|pass123|SPC_F=value&#10;0909123456|pass456|SPC_F=value&#10;email@test.com|pass789|SPC_F=data"
-            rows="12"
-          />
-        </div>
-
-        <div className="textarea-group">
-          <div className="label-row">
-            <label>{result ? 'Kết quả SPC_ST trả về' : 'Danh sách SPC mới (tùy chọn)'}</label>
-            {parsedResults.length > 0 && (
-              <button className="copy-all-btn" onClick={handleCopyAll}>📋 Copy tất cả SPC_ST</button>
-            )}
-          </div>
-          {parsedResults.length > 0 ? (
-            <div className="result-list">
-              {parsedResults.map((item, idx) => (
-                <div
-                  key={idx}
-                  className={`result-item ${item.success ? 'success' : 'fail'}`}
-                  onClick={() => item.success && handleCopyOne(item.prefix, item.value)}
-                  title={item.success ? 'Click để copy' : ''}
-                >
-                  <div className="result-header">
-                    <span className="result-id">{item.id}</span>
-                    <span className="result-des">{item.des}</span>
-                    <span className="result-icon">{item.success ? '✅' : '❌'}</span>
-                  </div>
-                  {item.success && (
-                    <div className="result-spc">
-                      <span className="spc-label">{item.prefix}</span>
-                      <span className="spc-value">{item.value}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <textarea
-              className="no-wrap"
-              wrap="off"
-              value={text2}
-              onChange={(e) => setText2(e.target.value)}
-              placeholder="Sau khi gửi, kết quả SPC_ST sẽ hiển thị ở đây..."
-              rows="12"
-            />
-          )}
-        </div>
-      </div>
-
-      {error && <div className="alert alert-error">{error}</div>}
-      <button className="submit-btn" onClick={handleSubmit} disabled={loading}>
-        {loading ? 'Đang gửi...' : 'Gửi'}
-      </button>
+  return <div className="spc-form login-form">
+    <div className="login-header">
+      <div className="login-title-wrap"><div className="login-title-icon">🔄</div><div><h2>Làm mới SPC_ST</h2><p>Tạo cookie SPC_ST mới cho danh sách tài khoản của bạn</p></div></div>
+      <div className="login-count-badge"><strong>{lineCount}</strong><span>/ 500 tài khoản</span></div>
     </div>
-  );
+    <div className="login-guide"><div className="login-guide-icon">💡</div><div><strong>Định dạng mỗi dòng</strong><code>tài_khoản | mật_khẩu | SPC_F=value</code><span>Hỗ trợ tên đăng nhập, số điện thoại hoặc email.</span></div></div>
+    <div className="login-panels">
+      <section className="login-panel"><div className="login-panel-header"><div className="login-panel-title"><span className="login-panel-icon input">👤</span><div><h3>Danh sách tài khoản</h3><p>Dán dữ liệu cần làm mới</p></div></div><span className={`line-counter ${lineCount >= 500 ? 'limit' : ''}`}>{lineCount}/500</span></div><textarea className="no-wrap login-textarea" wrap="off" value={text1} onChange={changeText} placeholder={'username|password|SPC_F=value\n0909123456|password|SPC_F=value\nemail@example.com|password|SPC_F=value'} rows="12" /><div className="login-panel-footer"><span>{lineCount ? `${lineCount} dòng sẵn sàng xử lý` : 'Chưa có dữ liệu'}</span><span>Tối đa 500 dòng</span></div></section>
+      <section className="login-panel"><div className="login-panel-header"><div className="login-panel-title"><span className="login-panel-icon output">✓</span><div><h3>Kết quả SPC_ST</h3><p>{parsedResults.length ? `${successCount} tài khoản thành công` : 'Kết quả sẽ hiển thị tại đây'}</p></div></div>{parsedResults.length > 0 && <button className="copy-all-btn" onClick={copyAll}>📋 Sao chép tất cả</button>}</div>{parsedResults.length > 0 ? <div className="login-result-list">{parsedResults.map((item, index) => <button key={index} type="button" className={`login-result-item ${item.success ? 'success' : 'fail'}`} onClick={() => item.success && copy(`SPC_ST=${item.value}`)} disabled={!item.success} title={item.success ? 'Nhấn để sao chép SPC_ST' : item.description}><div className="login-result-top"><span className="login-result-id">{item.id}</span><span className="login-result-status">{item.success ? 'Đã làm mới' : 'Không thành công'}</span></div><span className="login-result-message">{item.description || (item.success ? 'SPC_ST đã được cập nhật' : 'Không thể làm mới SPC_ST')}</span>{item.success && <code>SPC_ST={item.value}</code>}</button>)}</div> : <div className="login-empty-result"><span>📋</span><strong>Chưa có kết quả</strong><p>Nhập danh sách tài khoản, sau đó nhấn làm mới SPC_ST.</p></div>}</section>
+    </div>
+    {error && <div className="alert alert-error"><span>⚠️</span>{error}</div>}
+    <button className="submit-btn login-submit-btn" onClick={submit} disabled={loading}>{loading ? <><span className="loading-spinner" />Đang làm mới...</> : <><span>🔄</span>Làm mới SPC_ST</>}</button>
+    <p className="login-submit-hint">🔒 Dữ liệu được xử lý tự động và bảo mật</p>
+  </div>;
 }
