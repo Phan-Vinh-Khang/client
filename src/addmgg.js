@@ -10,6 +10,10 @@ export default function AddMGG({ setToast }) {
   const [validResults, setValidResults] = useState([]);
   const [errorResults, setErrorResults] = useState([]);
 
+  // NEW:
+  // true khi toàn bộ results đều có invalid_message_code = 5
+  const [allInvalidVoucher, setAllInvalidVoucher] = useState(false);
+
   const copyToClipboard = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -74,12 +78,16 @@ export default function AddMGG({ setToast }) {
       .filter(l => l !== '');
 
     if (listUser.length === 0) {
-      setVoucherError('Vui lòng nhập ít nhất 1 SPC_ST ở Textbox 1');
+      setVoucherError(
+        'Vui lòng nhập ít nhất 1 SPC_ST ở Textbox 1'
+      );
       return;
     }
 
     if (listVoucher.length === 0) {
-      setVoucherError('Vui lòng nhập ít nhất 1 voucher ở Textbox 2');
+      setVoucherError(
+        'Vui lòng nhập ít nhất 1 voucher ở Textbox 2'
+      );
       return;
     }
 
@@ -90,17 +98,30 @@ export default function AddMGG({ setToast }) {
     setValidResults([]);
     setErrorResults([]);
 
+    // NEW: reset trạng thái code 5
+    setAllInvalidVoucher(false);
+
     try {
-      // --- Đọc query param addDB từ URL client ---
-      const clientParams = new URLSearchParams(window.location.search);
+      // =====================================================
+      // ĐỌC QUERY PARAM addDB
+      // =====================================================
+
+      const clientParams = new URLSearchParams(
+        window.location.search
+      );
+
       const addDB = clientParams.get('addDB');
 
-      let apiUrl = 'https://api6-production.up.railway.app/addmgg';
+      let apiUrl =
+        'https://api6-production.up.railway.app/addmgg';
 
       if (addDB === 'false') {
         apiUrl += '?addDB=false';
       }
-      // --- END ---
+
+      // =====================================================
+      // CALL API
+      // =====================================================
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -121,8 +142,18 @@ export default function AddMGG({ setToast }) {
         );
       }
 
-      // Tách valid & error
-      const all = data.results || [];
+      // =====================================================
+      // ALL RESULTS
+      // =====================================================
+
+      const all = Array.isArray(data.results)
+        ? data.results
+        : [];
+
+      // =====================================================
+      // VALID
+      // 0 hoặc 1 = có voucher
+      // =====================================================
 
       const valids = all.filter(
         item =>
@@ -130,64 +161,125 @@ export default function AddMGG({ setToast }) {
           item.invalid_message_code === 1
       );
 
+      // =====================================================
+      // ERROR
+      // =====================================================
+
       const errors = all.filter(
         item =>
           item.status === 'auth_failed' ||
           item.invalid_message_code === 2
       );
 
+      // =====================================================
+      // NEW:
+      // KIỂM TRA TOÀN BỘ RESULTS CÓ CODE = 5
+      //
+      // Ví dụ:
+      //
+      // [
+      //   { invalid_message_code: 5 },
+      //   { invalid_message_code: 5 },
+      //   { invalid_message_code: 5 }
+      // ]
+      //
+      // => true
+      //
+      // Điều kiện all.length > 0 để tránh mảng rỗng
+      // bị every() trả về true.
+      // =====================================================
+
+      const isAllInvalidVoucher =
+        all.length > 0 &&
+        all.every(
+          item => item.invalid_message_code === 5
+        );
+
+      // =====================================================
+      // VALID COUNT
+      // =====================================================
+
       const count =
         data.validCount !== undefined
           ? data.validCount
           : valids.length;
 
+      // =====================================================
+      // SET STATE
+      // =====================================================
+
       setValidCount(count);
       setValidResults(valids);
       setErrorResults(errors);
 
-      // Nếu không có tài khoản nào áp được
-      if (valids.length === 0) {
-        setVoucher3('Không có cookie nào áp được mã');
+      // NEW
+      setAllInvalidVoucher(isAllInvalidVoucher);
+
+      // =====================================================
+      // TEXT BACKUP
+      // =====================================================
+
+      if (isAllInvalidVoucher) {
+        setVoucher3(
+          'Không có cookie nào áp được voucher'
+        );
+      } else if (
+        valids.length === 0 &&
+        errors.length === 0
+      ) {
+        setVoucher3(
+          'Không có cookie nào áp được voucher'
+        );
+      } else {
+        const validLines = valids.map(
+          item =>
+            `Account ${item.accountIndex} | ${item.voucherCode} | ${
+              item.cookie || ''
+            }`
+        );
+
+        const errorLines = errors.map(
+          item =>
+            `Account ${item.accountIndex} | ${item.voucherCode} | ${
+              item.cookie || ''
+            } | [ERROR: ${
+              item.invalid_message ||
+              item.error_msg ||
+              'Cookie hết hạn'
+            }]`
+        );
+
+        setVoucher3(
+          `${count} tài khoản có voucher\n\n` +
+            `${validLines.join('\n')}\n\n` +
+            `${
+              errors.length > 0
+                ? `--- ${errors.length} tài khoản lỗi ---\n${errorLines.join(
+                    '\n'
+                  )}`
+                : ''
+            }`
+        );
       }
-
-      const validLines = valids.map(
-        item =>
-          `Account ${item.accountIndex} | ${item.voucherCode} | ${
-            item.cookie || ''
-          }`
-      );
-
-      const errorLines = errors.map(
-        item =>
-          `Account ${item.accountIndex} | ${item.voucherCode} | ${
-            item.cookie || ''
-          } | [ERROR: ${
-            item.invalid_message || 'Cookie hết hạn'
-          }]`
-      );
-
-      setVoucher3(
-        `${count} tài khoản có voucher\n\n` +
-          `${validLines.join('\n')}\n\n` +
-          `${
-            errors.length > 0
-              ? `--- ${errors.length} tài khoản lỗi ---\n${errorLines.join(
-                  '\n'
-                )}`
-              : ''
-          }`
-      );
     } catch (err) {
       setVoucherError(
-        err.message || 'Có lỗi xảy ra khi gọi API'
+        err.message ||
+          'Có lỗi xảy ra khi gọi API'
       );
     } finally {
       setVoucherLoading(false);
     }
   };
 
+  // =========================================================
+  // COPY ALL COOKIE
+  // =========================================================
+
   const handleCopyAllCookie = () => {
-    const all = [...validResults, ...errorResults]
+    const all = [
+      ...validResults,
+      ...errorResults,
+    ]
       .map(r => r.cookie)
       .filter(Boolean)
       .join('\n');
@@ -199,18 +291,33 @@ export default function AddMGG({ setToast }) {
     }
   };
 
+  // =========================================================
+  // HAS RESULT
+  //
+  // Thêm allInvalidVoucher để code 5 vẫn render
+  // trong Textbox 3.
+  // =========================================================
+
   const hasAnyResult =
-    validResults.length > 0 || errorResults.length > 0;
+    validResults.length > 0 ||
+    errorResults.length > 0 ||
+    allInvalidVoucher;
 
   return (
-    <div className="spc-form add-mgg-form">
+    <div className="spc-form">
+
       {/* ================= HEADER ================= */}
+
       <div className="mgg-header">
         <div className="mgg-title-wrap">
-          <div className="mgg-title-icon">🎟️</div>
+
+          <div className="mgg-title-icon">
+            🎟️
+          </div>
 
           <div>
             <h2>Add mã giảm giá</h2>
+
             <p>
               Kiểm tra và áp dụng voucher cho danh sách tài khoản
             </p>
@@ -219,85 +326,155 @@ export default function AddMGG({ setToast }) {
 
         {validCount > 0 && (
           <div className="valid-count-box">
-            <span className="valid-count-icon">✓</span>
+
+            <span className="valid-count-icon">
+              ✓
+            </span>
 
             <div>
               <strong>{validCount}</strong>
-              <span> tài khoản có voucher</span>
+
+              <span>
+                {' '}tài khoản có voucher
+              </span>
             </div>
+
           </div>
         )}
       </div>
 
+
       {/* ================= WARNING ================= */}
+
       <div className="mgg-warning">
-        <div className="mgg-warning-icon">⚠️</div>
+
+        <div className="mgg-warning-icon">
+          ⚠️
+        </div>
 
         <div>
-          <strong>Lưu ý khi xử lý</strong>
+
+          <strong>
+            Lưu ý khi xử lý
+          </strong>
 
           <p>
-            Duyệt trên 100 cookie cùng lúc có thể phải chờ vài
-            phút. Nên ưu tiên duyệt số lượng cookie{' '}
-            <strong>&lt; 100</strong>.
+            Duyệt trên 100 cookie cùng lúc có thể phải
+            chờ vài phút. Nên ưu tiên duyệt số lượng
+            cookie <strong>&lt; 100</strong>.
           </p>
+
         </div>
       </div>
 
+
       {/* ================= HINT ================= */}
+
       <div className="hint-box">
+
         <div className="hint-title">
+
           <span>💡</span>
-          <strong>Định dạng nhập liệu</strong>
+
+          <strong>
+            Định dạng nhập liệu
+          </strong>
+
         </div>
 
         <div className="hint-items">
-          <div className="hint-item">
-            <span className="hint-number">1</span>
-            <code>Mỗi dòng 1 cookie SPC_ST</code>
-          </div>
 
           <div className="hint-item">
-            <span className="hint-number">2</span>
-            <code>Mỗi dòng 1 mã voucher</code>
+
+            <span className="hint-number">
+              1
+            </span>
+
+            <code>
+              Mỗi dòng 1 cookie SPC_ST
+            </code>
+
           </div>
 
+
           <div className="hint-item">
-            <span className="hint-number">3</span>
-            <span>Kết quả sẽ hiển thị tự động sau khi gửi</span>
+
+            <span className="hint-number">
+              2
+            </span>
+
+            <code>
+              Mỗi dòng 1 mã voucher
+            </code>
+
           </div>
+
+
+          <div className="hint-item">
+
+            <span className="hint-number">
+              3
+            </span>
+
+            <span>
+              Kết quả sẽ hiển thị tự động sau khi gửi
+            </span>
+
+          </div>
+
         </div>
       </div>
 
+
       {/* ================= MAIN ================= */}
+
       <div className="textarea-row">
 
-        {/* ===== TEXTBOX 1 ===== */}
+
+        {/* =================================================
+            TEXTBOX 1
+            ================================================= */}
+
         <div className="textarea-group col-large">
+
           <div className="panel-card">
 
             <div className="panel-header">
+
               <div className="panel-title">
-                <span className="panel-icon blue">🍪</span>
+
+                <span className="panel-icon blue">
+                  🍪
+                </span>
 
                 <div>
-                  <label>Danh sách SPC_ST</label>
+
+                  <label>
+                    Danh sách SPC_ST
+                  </label>
+
                   <span className="panel-description">
                     Cookie tài khoản Shopee
                   </span>
+
                 </div>
               </div>
 
               <span
                 className={`line-counter ${
-                  voucherLineCount1 >= 500 ? 'limit' : ''
+                  voucherLineCount1 >= 500
+                    ? 'limit'
+                    : ''
                 }`}
               >
                 {voucherLineCount1}/500
               </span>
+
             </div>
 
+
             <div className="textarea-wrapper">
+
               <textarea
                 className="no-wrap"
                 wrap="off"
@@ -310,6 +487,7 @@ SPC_ST=data3`}
               />
 
               <div className="textarea-footer">
+
                 <span>
                   {voucherLineCount1 > 0
                     ? `${voucherLineCount1} cookie đã nhập`
@@ -319,38 +497,61 @@ SPC_ST=data3`}
                 <span className="limit-text">
                   Tối đa 500 dòng
                 </span>
+
               </div>
+
             </div>
 
           </div>
+
         </div>
 
-        {/* ===== TEXTBOX 2 ===== */}
+
+        {/* =================================================
+            TEXTBOX 2
+            ================================================= */}
+
         <div className="textarea-group col-large">
+
           <div className="panel-card">
 
             <div className="panel-header">
+
               <div className="panel-title">
-                <span className="panel-icon purple">🎫</span>
+
+                <span className="panel-icon purple">
+                  🎫
+                </span>
 
                 <div>
-                  <label>Danh sách voucher</label>
+
+                  <label>
+                    Danh sách voucher
+                  </label>
+
                   <span className="panel-description">
                     Mã giảm giá cần kiểm tra
                   </span>
+
                 </div>
+
               </div>
 
               <span
                 className={`line-counter ${
-                  voucherLineCount2 >= 500 ? 'limit' : ''
+                  voucherLineCount2 >= 500
+                    ? 'limit'
+                    : ''
                 }`}
               >
                 {voucherLineCount2}/500
               </span>
+
             </div>
 
+
             <div className="textarea-wrapper">
+
               <textarea
                 className="no-wrap"
                 wrap="off"
@@ -363,6 +564,7 @@ voucher3`}
               />
 
               <div className="textarea-footer">
+
                 <span>
                   {voucherLineCount2 > 0
                     ? `${voucherLineCount2} voucher đã nhập`
@@ -372,195 +574,358 @@ voucher3`}
                 <span className="limit-text">
                   Tối đa 500 dòng
                 </span>
+
               </div>
+
             </div>
 
           </div>
+
         </div>
 
-        {/* ===== TEXTBOX 3 ===== */}
+
+        {/* =================================================
+            TEXTBOX 3
+            ================================================= */}
+
         <div className="textarea-group col-large">
+
           <div className="panel-card result-panel">
 
             <div className="panel-header">
+
               <div className="panel-title">
-                <span className="panel-icon green">✓</span>
+
+                <span className="panel-icon green">
+                  ✓
+                </span>
 
                 <div>
-                  <label>Tài khoản có voucher</label>
+
+                  <label>
+                    Tài khoản có voucher
+                  </label>
+
                   <span className="panel-description">
                     Kết quả kiểm tra tài khoản
                   </span>
+
                 </div>
+
               </div>
 
-              {hasAnyResult && (
-                <button
-                  className="copy-all-btn"
-                  onClick={handleCopyAllCookie}
-                >
-                  <span>📋</span>
-                  Copy tất cả
-                </button>
-              )}
+
+              {/* COPY ALL */}
+              {hasAnyResult &&
+                !allInvalidVoucher && (
+                  <button
+                    className="copy-all-btn"
+                    onClick={handleCopyAllCookie}
+                  >
+                    <span>📋</span>
+                    Copy tất cả
+                  </button>
+                )}
+
             </div>
 
+
+            {/* =================================================
+                RESULT AREA
+                ================================================= */}
+
             {hasAnyResult ? (
+
               <div className="result-list">
 
-                {/* Không có valid */}
-                {validResults.length === 0 && (
-                  <div className="empty-valid">
-                    <div className="empty-valid-icon">
-                      ⚠️
+
+                {/* =================================================
+                    NEW:
+                    TẤT CẢ INVALID_MESSAGE_CODE = 5
+                    ================================================= */}
+
+                {allInvalidVoucher && (
+
+                  <div className="invalid-voucher-box">
+
+                    <div className="invalid-voucher-icon">
+                      🎫
                     </div>
 
-                    <div>
+                    <div className="invalid-voucher-content">
+
                       <strong>
-                        Không có cookie nào áp được mã
+                        Không có cookie nào áp được voucher
                       </strong>
 
                       <span>
-                        Kiểm tra lại danh sách cookie hoặc voucher
+                        Tất cả tài khoản trong danh sách
+                        đều không áp dụng được mã voucher này.
                       </span>
+
                     </div>
+
                   </div>
+
                 )}
 
-                {/* ===== VALID ===== */}
-                {validResults.length > 0 && (
-                  <div className="result-section">
-                    <div className="result-section-title success-title">
-                      <span>✓</span>
-                      <span>Thành công</span>
-                      <b>{validResults.length}</b>
-                    </div>
 
-                    {validResults.map((item, idx) => (
-                      <div
-                        key={`valid-${idx}`}
-                        className="result-item success"
-                        onClick={() =>
-                          item.cookie &&
-                          copyToClipboard(item.cookie)
-                        }
-                        title="Click để copy cookie"
-                      >
-                        <div className="result-top">
-                          <div className="account-info">
-                            <span className="result-badge success-badge">
-                              ✓
-                            </span>
+                {/* =================================================
+                    CHỈ HIỂN THỊ CÁC PHẦN DƯỚI KHI KHÔNG PHẢI
+                    TRƯỜNG HỢP TOÀN BỘ CODE 5
+                    ================================================= */}
 
-                            <div>
-                              <span className="account-label">
-                                Account
-                              </span>
+                {!allInvalidVoucher && (
+                  <>
 
-                              <strong>
-                                {item.accountIndex}
-                              </strong>
-                            </div>
-                          </div>
+                    {/* =========================================
+                        KHÔNG CÓ VALID
+                        ========================================= */}
 
-                          <span className="click-copy">
-                            Click để copy
-                          </span>
+                    {validResults.length === 0 && (
+                      <div className="empty-valid">
+
+                        <div className="empty-valid-icon">
+                          ⚠️
                         </div>
 
-                        <div className="voucher-row">
-                          <span>Voucher</span>
+                        <div>
+
                           <strong>
-                            {item.voucherCode}
+                            Không có cookie nào áp được mã
                           </strong>
-                        </div>
 
-                        {item.cookie && (
-                          <div className="result-spc">
-                            {item.cookie}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* ===== ERROR ===== */}
-                {errorResults.length > 0 && (
-                  <div className="result-section error-section">
-                    <div className="result-section-title error-title">
-                      <span>⚠</span>
-                      <span>Tài khoản lỗi</span>
-                      <b>{errorResults.length}</b>
-                    </div>
-
-                    {errorResults.map((item, idx) => (
-                      <div
-                        key={`error-${idx}`}
-                        className="result-item error"
-                        onClick={() =>
-                          item.cookie &&
-                          copyToClipboard(item.cookie)
-                        }
-                        title="Click để copy cookie lỗi"
-                      >
-                        <div className="result-top">
-                          <div className="account-info">
-                            <span className="result-badge error-badge">
-                              !
-                            </span>
-
-                            <div>
-                              <span className="account-label">
-                                Account
-                              </span>
-
-                              <strong>
-                                {item.accountIndex}
-                              </strong>
-                            </div>
-                          </div>
-
-                          <span className="click-copy">
-                            Click để copy
+                          <span>
+                            Kiểm tra lại danh sách cookie
+                            hoặc voucher
                           </span>
+
                         </div>
 
-                        <div className="voucher-row">
-                          <span>Voucher</span>
-                          <strong>
-                            {item.voucherCode}
-                          </strong>
-                        </div>
-
-                        <div className="error-message">
-                          ⚠️{' '}
-                          {item.invalid_message ||
-                            'Cookie hết hạn'}
-                        </div>
-
-                        {item.cookie && (
-                          <div className="result-spc error-cookie">
-                            {item.cookie}
-                          </div>
-                        )}
                       </div>
-                    ))}
-                  </div>
+                    )}
+
+
+                    {/* =========================================
+                        VALID
+                        ========================================= */}
+
+                    {validResults.length > 0 && (
+
+                      <div className="result-section">
+
+                        <div className="result-section-title success-title">
+
+                          <span>✓</span>
+
+                          <span>
+                            Thành công
+                          </span>
+
+                          <b>
+                            {validResults.length}
+                          </b>
+
+                        </div>
+
+
+                        {validResults.map(
+                          (item, idx) => (
+
+                            <div
+                              key={`valid-${idx}`}
+                              className="result-item success"
+                              onClick={() =>
+                                item.cookie &&
+                                copyToClipboard(
+                                  item.cookie
+                                )
+                              }
+                              title="Click để copy cookie"
+                            >
+
+                              <div className="result-top">
+
+                                <div className="account-info">
+
+                                  <span className="result-badge success-badge">
+                                    ✓
+                                  </span>
+
+                                  <div>
+
+                                    <span className="account-label">
+                                      Account
+                                    </span>
+
+                                    <strong>
+                                      {item.accountIndex}
+                                    </strong>
+
+                                  </div>
+
+                                </div>
+
+                                <span className="click-copy">
+                                  Click để copy
+                                </span>
+
+                              </div>
+
+
+                              <div className="voucher-row">
+
+                                <span>
+                                  Voucher
+                                </span>
+
+                                <strong>
+                                  {item.voucherCode}
+                                </strong>
+
+                              </div>
+
+
+                              {item.cookie && (
+                                <div className="result-spc">
+                                  {item.cookie}
+                                </div>
+                              )}
+
+                            </div>
+
+                          )
+                        )}
+
+                      </div>
+                    )}
+
+
+                    {/* =========================================
+                        ERROR
+                        ========================================= */}
+
+                    {errorResults.length > 0 && (
+
+                      <div className="result-section error-section">
+
+                        <div className="result-section-title error-title">
+
+                          <span>⚠</span>
+
+                          <span>
+                            Tài khoản lỗi
+                          </span>
+
+                          <b>
+                            {errorResults.length}
+                          </b>
+
+                        </div>
+
+
+                        {errorResults.map(
+                          (item, idx) => (
+
+                            <div
+                              key={`error-${idx}`}
+                              className="result-item error"
+                              onClick={() =>
+                                item.cookie &&
+                                copyToClipboard(
+                                  item.cookie
+                                )
+                              }
+                              title="Click để copy cookie lỗi"
+                            >
+
+                              <div className="result-top">
+
+                                <div className="account-info">
+
+                                  <span className="result-badge error-badge">
+                                    !
+                                  </span>
+
+                                  <div>
+
+                                    <span className="account-label">
+                                      Account
+                                    </span>
+
+                                    <strong>
+                                      {item.accountIndex}
+                                    </strong>
+
+                                  </div>
+
+                                </div>
+
+                                <span className="click-copy">
+                                  Click để copy
+                                </span>
+
+                              </div>
+
+
+                              <div className="voucher-row">
+
+                                <span>
+                                  Voucher
+                                </span>
+
+                                <strong>
+                                  {item.voucherCode}
+                                </strong>
+
+                              </div>
+
+
+                              <div className="error-message">
+
+                                ⚠️{' '}
+
+                                {item.invalid_message ||
+                                  item.error_msg ||
+                                  'Cookie hết hạn'}
+
+                              </div>
+
+
+                              {item.cookie && (
+                                <div className="result-spc error-cookie">
+                                  {item.cookie}
+                                </div>
+                              )}
+
+                            </div>
+
+                          )
+                        )}
+
+                      </div>
+                    )}
+
+                  </>
                 )}
+
               </div>
+
             ) : (
+
               <div className="result-empty">
 
                 <div className="result-empty-icon">
                   <span>📋</span>
                 </div>
 
-                <strong>Chưa có kết quả</strong>
+                <strong>
+                  Chưa có kết quả
+                </strong>
 
                 <span>
-                  Kết quả tài khoản có voucher sẽ hiển thị
-                  ở đây sau khi bạn nhấn Gửi
+                  Kết quả tài khoản có voucher sẽ
+                  hiển thị ở đây sau khi bạn nhấn Gửi
                 </span>
 
                 <textarea
@@ -571,45 +936,74 @@ voucher3`}
                   rows="5"
                   aria-hidden="true"
                 />
+
               </div>
+
             )}
+
           </div>
+
         </div>
+
       </div>
 
+
       {/* ================= ERROR ================= */}
+
       {voucherError && (
         <div className="alert alert-error">
-          <span className="alert-icon">⚠️</span>
-          <span>{voucherError}</span>
+
+          <span className="alert-icon">
+            ⚠️
+          </span>
+
+          <span>
+            {voucherError}
+          </span>
+
         </div>
       )}
 
+
       {/* ================= SUBMIT ================= */}
+
       <button
         className="submit-btn"
         onClick={handleVoucherSubmit}
         disabled={voucherLoading}
       >
+
         {voucherLoading ? (
           <>
             <span className="loading-spinner"></span>
-            <span>Đang xử lý...</span>
+
+            <span>
+              Đang xử lý...
+            </span>
           </>
         ) : (
           <>
             <span>🚀</span>
-            <span>Gửi & kiểm tra voucher</span>
+
+            <span>
+              Gửi & kiểm tra voucher
+            </span>
           </>
         )}
+
       </button>
 
+
       <div className="submit-hint">
+
         <span>🔒</span>
+
         <span>
           Dữ liệu được xử lý tự động • Tối đa 500 cookie
         </span>
+
       </div>
+
     </div>
   );
 }
