@@ -113,7 +113,7 @@ export default function AddMGG({ setToast }) {
       const addDB = clientParams.get('addDB');
 
       let apiUrl =
-        'https://api6-production.up.railway.app/addmgg';
+        'https://giving-youthfulness-production-f562.up.railway.app/addmgg';
 
       if (addDB === 'false') {
         apiUrl += '?addDB=false';
