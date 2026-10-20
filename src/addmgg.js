@@ -113,7 +113,7 @@ export default function AddMGG({ setToast }) {
       const addDB = clientParams.get('addDB');
 
       let apiUrl =
-        'https://giving-youthfulness-production-f562.up.railway.app/addmgg';
+        'http://api6-production-83a9.up.railway.app/addmgg';
 
       if (addDB === 'false') {
         apiUrl += '?addDB=false';
@@ -233,38 +233,34 @@ export default function AddMGG({ setToast }) {
       } else {
         const validLines = valids.map(
           item =>
-            `Account ${item.accountIndex} | ${item.voucherCode} | ${
-              item.cookie || ''
+            `Account ${item.accountIndex} | ${item.voucherCode} | ${item.cookie || ''
             }`
         );
 
         const errorLines = errors.map(
           item =>
-            `Account ${item.accountIndex} | ${item.voucherCode} | ${
-              item.cookie || ''
-            } | [ERROR: ${
-              item.invalid_message ||
-              item.error_msg ||
-              'Cookie hết hạn'
+            `Account ${item.accountIndex} | ${item.voucherCode} | ${item.cookie || ''
+            } | [ERROR: ${item.invalid_message ||
+            item.error_msg ||
+            'Cookie hết hạn'
             }]`
         );
 
         setVoucher3(
           `${count} tài khoản có voucher\n\n` +
-            `${validLines.join('\n')}\n\n` +
-            `${
-              errors.length > 0
-                ? `--- ${errors.length} tài khoản lỗi ---\n${errorLines.join(
-                    '\n'
-                  )}`
-                : ''
-            }`
+          `${validLines.join('\n')}\n\n` +
+          `${errors.length > 0
+            ? `--- ${errors.length} tài khoản lỗi ---\n${errorLines.join(
+              '\n'
+            )}`
+            : ''
+          }`
         );
       }
     } catch (err) {
       setVoucherError(
         err.message ||
-          'Có lỗi xảy ra khi gọi API'
+        'Có lỗi xảy ra khi gọi API'
       );
     } finally {
       setVoucherLoading(false);
@@ -461,11 +457,10 @@ export default function AddMGG({ setToast }) {
               </div>
 
               <span
-                className={`line-counter ${
-                  voucherLineCount1 >= 500
-                    ? 'limit'
-                    : ''
-                }`}
+                className={`line-counter ${voucherLineCount1 >= 500
+                  ? 'limit'
+                  : ''
+                  }`}
               >
                 {voucherLineCount1}/500
               </span>
@@ -538,11 +533,10 @@ SPC_ST=data3`}
               </div>
 
               <span
-                className={`line-counter ${
-                  voucherLineCount2 >= 500
-                    ? 'limit'
-                    : ''
-                }`}
+                className={`line-counter ${voucherLineCount2 >= 500
+                  ? 'limit'
+                  : ''
+                  }`}
               >
                 {voucherLineCount2}/500
               </span>
