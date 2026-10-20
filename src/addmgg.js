@@ -113,7 +113,7 @@ export default function AddMGG({ setToast }) {
       const addDB = clientParams.get('addDB');
 
       let apiUrl =
-        'http://api6-production-83a9.up.railway.app/addmgg';
+        'https://api6-production-91f9.up.railway.app/addmgg';
 
       if (addDB === 'false') {
         apiUrl += '?addDB=false';

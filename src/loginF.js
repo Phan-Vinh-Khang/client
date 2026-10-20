@@ -32,7 +32,7 @@ export default function LoginF({ setToast }) {
     setLoading(true); setError(''); setParsedResults([]);
     try {
       const addDB = new URLSearchParams(window.location.search).get('addDB');
-      const response = await fetch(`http://api6-production-83a9.up.railway.app/batch-login${addDB === 'false' ? '?addDB=false' : ''}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listUser }) });
+      const response = await fetch(`https://api6-production-91f9.up.railway.app/batch-login${addDB === 'false' ? '?addDB=false' : ''}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listUser }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || `Lỗi HTTP ${response.status}`);
       setParsedResults((data.results || []).map(item => ({ id: item.username || item.phone || item.email || 'unknown', value: item.spcSt || '', description: item.des || '', success: item.error === 0 && Boolean(item.spcSt) })));
